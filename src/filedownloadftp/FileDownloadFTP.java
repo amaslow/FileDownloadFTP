@@ -31,6 +31,7 @@ public class FileDownloadFTP {
     static String excelOutput = "G:\\Product Content\\Sales & Content tools\\New product picture log file\\New product picture log file.xlsx";
     static String folderDest = "G:\\Product Content\\PRODUCTS\\";
     static ArrayList<String> sap = new ArrayList<String>();
+    static DateFormat dateFormater = new SimpleDateFormat("dd-MM-yyyy");
 
     public static void main(String[] args) throws IOException, ParseException, NullPointerException, SocketTimeoutException {
         String src = "/";
@@ -51,9 +52,9 @@ public class FileDownloadFTP {
             ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
             System.out.println("Connected to FTP...");
             bw.newLine();
+            bw.write(dateFormater.format(new Date()));
             bw.newLine();
             bw.write("Connected to FTP...");
-            bw.newLine();
 
             listDirectory(bw, ftpClient, src, "", dst);
 
@@ -82,6 +83,8 @@ public class FileDownloadFTP {
                 ex.printStackTrace();
             }
         }
+        bw.flush();
+        bw.close();
     }
 
     static void listDirectory(BufferedWriter bw, FTPClient ftpClient, String parentDir, String currentDir, File destDir) throws IOException, NullPointerException {
@@ -163,7 +166,6 @@ public class FileDownloadFTP {
 
     static void createLog(String material) throws IOException, FileNotFoundException, NullPointerException {
         int week = Calendar.getInstance().get(Calendar.WEEK_OF_YEAR);
-        DateFormat dateFormater = new SimpleDateFormat("dd-MM-yyyy");
         String modDate = dateFormater.format(new Date());
         String pictureName = null;
         String pictureName2 = folderDest + material.replace(".", "") + "\\LR_" + material.replace(".", "") + "_2.jpg";
