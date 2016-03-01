@@ -1,10 +1,12 @@
 package filedownloadftp;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.SocketTimeoutException;
@@ -33,6 +35,8 @@ public class FileDownloadFTP {
     public static void main(String[] args) throws IOException, ParseException, NullPointerException, SocketTimeoutException {
         String src = "/";
         File dst = new File(folderDest);
+        FileWriter fw = new FileWriter("H:/Logs/FileDownloadFtp.log", true);
+        BufferedWriter bw = new BufferedWriter(fw);
 
         String server = "ftp.tristar.eu";
         int port = 21;
@@ -46,11 +50,17 @@ public class FileDownloadFTP {
             ftpClient.enterLocalPassiveMode();
             ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
             System.out.println("Connected to FTP...");
+            bw.newLine();
+            bw.newLine();
+            bw.write("Connected to FTP...");
+            bw.newLine();
 
-            listDirectory(ftpClient, src, "", dst);
+            listDirectory(bw, ftpClient, src, "", dst);
 
         } catch (IOException ex) {
             System.out.println("Error: " + ex.getMessage());
+            bw.newLine();
+            bw.write("Error: " + ex.getMessage());
             ex.printStackTrace();
         } finally {
             try {
@@ -58,10 +68,15 @@ public class FileDownloadFTP {
                     ftpClient.logout();
                     ftpClient.disconnect();
                     System.out.println("Disconnected");
+                    bw.newLine();
+                    bw.write("Disconnected");
+                    System.out.println("----------------------------------------------");
+                    bw.newLine();
+                    bw.write("----------------------------------------------");
                     for (int i = 0; i < sap.size(); i++) {
-                        System.out.println(sap.get(i));
                         createLog(sap.get(i));
                     }
+
                 }
             } catch (IOException ex) {
                 ex.printStackTrace();
@@ -69,7 +84,7 @@ public class FileDownloadFTP {
         }
     }
 
-    static void listDirectory(FTPClient ftpClient, String parentDir, String currentDir, File destDir) throws IOException, NullPointerException {
+    static void listDirectory(BufferedWriter bw, FTPClient ftpClient, String parentDir, String currentDir, File destDir) throws IOException, NullPointerException {
         String dirToList = parentDir;
         if (!currentDir.equals("")) {
             dirToList += "/" + currentDir;
@@ -87,13 +102,13 @@ public class FileDownloadFTP {
                         String material = currentFileName.substring(0, 2) + "." + currentFileName.substring(2, 5) + "." + currentFileName.substring(5, 7);
                         sap.add(material);
                     }
-                    listDirectory(ftpClient, dirToList, currentFileName, destDir);
+                    listDirectory(bw, ftpClient, dirToList, currentFileName, destDir);
 
                 } else {
                     if (!currentFileName.toLowerCase().endsWith("jpg")) {
                         continue;
                     }
-                    copyFiles(ftpClient, currentFileName, destDir);
+                    copyFiles(bw, ftpClient, currentFileName, destDir);
                 }
             }
 //            for (int i = 0; i < sap.size(); i++) {
@@ -108,11 +123,15 @@ public class FileDownloadFTP {
                     boolean successDelete = ftpClient.deleteFile(dirToList + "/" + dFile.getName());
                     if (successDelete) {
                         System.out.println("File " + dFile.getName() + " has been deleted.");
+                        bw.newLine();
+                        bw.write("File " + dFile.getName() + " has been deleted.");
                     }
                 } else {
                     boolean successDelete = ftpClient.removeDirectory(dirToList + "/" + dFile.getName());
                     if (successDelete) {
                         System.out.println("Folder " + currentFileName + " has been deleted.");
+                        bw.newLine();
+                        bw.write("Folder " + currentFileName + " has been deleted.");
                     }
                 }
 
@@ -121,7 +140,7 @@ public class FileDownloadFTP {
         }
     }
 
-    static void copyFiles(FTPClient ftpClient, String currentFileName, File destDir) throws FileNotFoundException, IOException {
+    static void copyFiles(BufferedWriter bw, FTPClient ftpClient, String currentFileName, File destDir) throws FileNotFoundException, IOException {
         String currentDirName = currentFileName.substring(3, 10);
         String remoteFile = "/" + currentDirName + "/output/" + currentFileName;
         File destination = new File(destDir + "/" + currentDirName + "/");
@@ -133,6 +152,12 @@ public class FileDownloadFTP {
         outputStream.close();
         if (successCopy) {
             System.out.println("File " + currentFileName + " has been downloaded successfully.");
+            bw.newLine();
+            bw.write("File " + currentFileName + " has been downloaded successfully.");
+        } else {
+            System.out.println("File " + currentFileName + " not downloaded.");
+            bw.newLine();
+            bw.write("File " + currentFileName + " not downloaded.");
         }
     }
 
@@ -201,7 +226,7 @@ public class FileDownloadFTP {
             my_anchor.setDy2(0);
             drawing.createPicture(my_anchor, my_picture_id);
         }
-        System.out.println("rownr: " + last + " week: " + week + " modDate: " + modDate + " material: " + material + " description: " + getDescrBySap(material));
+        //System.out.println("rownr: " + last + " week: " + week + " modDate: " + modDate + " material: " + material + " description: " + getDescrBySap(material));
         fis.close();
         FileOutputStream fos = new FileOutputStream(new File(excelOutput));
         wb.write(fos);
