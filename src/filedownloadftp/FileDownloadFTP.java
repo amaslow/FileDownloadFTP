@@ -26,24 +26,24 @@ import org.apache.poi.util.IOUtils;
 import org.apache.poi.xssf.usermodel.*;
 
 public class FileDownloadFTP {
-
+    
     static String excelSource = "G:\\CM\\Category Management Only\\_S0000_Trade marketing\\Pictures Spaceman\\SAP_EAN.xlsx";
     static String excelOutput = "G:\\Product Content\\Sales & Content tools\\New product picture log file\\New product picture log file.xlsx";
     static String folderDest = "G:\\Product Content\\PRODUCTS\\";
     static ArrayList<String> sap = new ArrayList<String>();
     static DateFormat dateFormater = new SimpleDateFormat("dd-MM-yyyy");
-
+    
     public static void main(String[] args) throws IOException, ParseException, NullPointerException, SocketTimeoutException {
         String src = "/";
         File dst = new File(folderDest);
         FileWriter fw = new FileWriter("H:/Logs/FileDownloadFtp.log", true);
         BufferedWriter bw = new BufferedWriter(fw);
-
+        
         String server = "ftp.tristar.eu";
         int port = 21;
         String user = "TransferSLfotoDB";
         String pass = "5bnV2iss";
-
+        
         FTPClient ftpClient = new FTPClient();
         try {
             ftpClient.connect(server, port);
@@ -55,9 +55,9 @@ public class FileDownloadFTP {
             bw.write(dateFormater.format(new Date()));
             bw.newLine();
             bw.write("Connected to FTP...");
-
+            
             listDirectory(bw, ftpClient, src, "", dst);
-
+            
         } catch (IOException ex) {
             System.out.println("Error: " + ex.getMessage());
             bw.newLine();
@@ -77,7 +77,7 @@ public class FileDownloadFTP {
                     for (int i = 0; i < sap.size(); i++) {
                         createLog(sap.get(i));
                     }
-
+                    
                 }
             } catch (IOException ex) {
                 ex.printStackTrace();
@@ -86,14 +86,15 @@ public class FileDownloadFTP {
         bw.flush();
         bw.close();
     }
-
+    
     static void listDirectory(BufferedWriter bw, FTPClient ftpClient, String parentDir, String currentDir, File destDir) throws IOException, NullPointerException {
         String dirToList = parentDir;
         if (!currentDir.equals("")) {
             dirToList += "/" + currentDir;
         }
-
+        
         FTPFile[] subFiles = ftpClient.listFiles(dirToList);
+        ArrayList notToDelete = new ArrayList();
         if (subFiles != null && subFiles.length > 0) {
             for (FTPFile aFile : subFiles) {
                 String currentFileName = aFile.getName();
@@ -106,20 +107,24 @@ public class FileDownloadFTP {
                         sap.add(material);
                     }
                     listDirectory(bw, ftpClient, dirToList, currentFileName, destDir);
-
+                    
                 } else {
                     if (!currentFileName.toLowerCase().endsWith("jpg")) {
                         continue;
                     }
-                    copyFiles(bw, ftpClient, currentFileName, destDir);
+                    String xxx = copyFiles(bw, ftpClient, currentFileName, destDir);
+                    if (xxx != null && !xxx.equals("")) {
+                        notToDelete.add(xxx);
+                    }
                 }
             }
-//            for (int i = 0; i < sap.size(); i++) {
-//                createLog(sap.get(i));
-//            }
+            for (int i = 0; i < notToDelete.size(); i += 1) {
+                System.out.println(notToDelete.get(i));
+            }
             for (FTPFile dFile : subFiles) {
                 String currentFileName = dFile.getName();
-                if (currentFileName.equals(".") || currentFileName.equals("..")) {
+                if (currentFileName.equals(".") || currentFileName.equals("..") 
+                        || notToDelete.contains(currentFileName)) {
                     continue;
                 }
                 if (!dFile.isDirectory()) {
@@ -137,13 +142,13 @@ public class FileDownloadFTP {
                         bw.write("Folder " + currentFileName + " has been deleted.");
                     }
                 }
-
+                
             }
-
+            
         }
     }
-
-    static void copyFiles(BufferedWriter bw, FTPClient ftpClient, String currentFileName, File destDir) throws FileNotFoundException, IOException {
+    
+    public static String copyFiles(BufferedWriter bw, FTPClient ftpClient, String currentFileName, File destDir) throws FileNotFoundException, IOException {
         String currentDirName = currentFileName.substring(3, 10);
         String remoteFile = "/" + currentDirName + "/output/" + currentFileName;
         File destination = new File(destDir + "/" + currentDirName + "/");
@@ -161,9 +166,11 @@ public class FileDownloadFTP {
             System.out.println("File " + currentFileName + " not downloaded.");
             bw.newLine();
             bw.write("File " + currentFileName + " not downloaded.");
+            return currentFileName;
         }
+        return null;
     }
-
+    
     static void createLog(String material) throws IOException, FileNotFoundException, NullPointerException {
         int week = Calendar.getInstance().get(Calendar.WEEK_OF_YEAR);
         String modDate = dateFormater.format(new Date());
@@ -181,14 +188,14 @@ public class FileDownloadFTP {
         }
         FileInputStream fis = null;
         fis = new FileInputStream(new File(excelOutput));
-
+        
         XSSFWorkbook wb = new XSSFWorkbook(fis);
         XSSFSheet sheet = wb.getSheetAt(0);
         CellStyle style = wb.createCellStyle();
         style.setVerticalAlignment(XSSFCellStyle.VERTICAL_CENTER);
-
+        
         int last = (sheet.getLastRowNum() + 1);
-
+        
         XSSFRow row = sheet.createRow(last);
         row.setHeight((short) 1000);
         XSSFCell weekCell = row.createCell(0);
@@ -234,7 +241,7 @@ public class FileDownloadFTP {
         wb.write(fos);
         fos.close();
     }
-
+    
     public static String getDescrBySap(String material) throws NullPointerException, IOException {
         List sheetData = new ArrayList();
         FileInputStream fis_excel = null;
@@ -270,5 +277,5 @@ public class FileDownloadFTP {
         }
         return null;
     }
-
+    
 }
